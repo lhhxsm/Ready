@@ -63,14 +63,15 @@
 - Handler的使用  
 	1.post(runnable)  
 	2.sendMessage(message)
-- Handler内部实现机制
-	1. Message：是在线程之间传递的消息。用于在不同线程之间的交换数据。
-	2. Handler：处理子线程和UI线程的消息对象Message。在子线程调用sendMessage发送消息对象，在handleMessage方法处理Message。
-	3. MessageQueue：消息队列，用于存放所有通过Handler发送过来的消息。消息会一直存放于消息队列当中，等待被处理。每个线程中只会有一个MessageQueue对象。MessageQueue底层数据结构是队列，而且这个队列只存放Message。
-	4. Looper:调用Looper的loop()方法后，进入到一个无限循环当中，然后每当MesssageQueue中存在一条消息，Looper就会将这条消息取出，并将它传递到Handler的handleMessage()方法中。每个线程只有一个Looper对象。
+- Handler内部实现机制  
+	1.Message：是在线程之间传递的消息。用于在不同线程之间的交换数据。  
+	2.Handler：处理子线程和UI线程的消息对象Message。在子线程调用sendMessage发送消息对象，在handleMessage方法处理Message。  
+	3.MessageQueue：消息队列，用于存放所有通过Handler发送过来的消息。消息会一直存放于消息队列当中，等待被处理。每个线程中只会有一个MessageQueue对象。MessageQueue底层数据结构是队列，而且这个队列只存放Message。  
+	4.Looper:调用Looper的loop()方法后，进入到一个无限循环当中，然后每当MesssageQueue中存在一条消息，Looper就会将这条消息取出，并将它传递到Handler的handleMessage()方法中。每个线程只有一个Looper对象。
+![](https://raw.githubusercontent.com/lhhxsm/Ready/master/picture/Handler%E6%9C%BA%E5%88%B6.png)
 	
-- Handler引起的内存泄漏 
-	1. 原因：静态内部类持有外部类的匿名引用，导致外部activity无法得到释放。
-	2. 解决方法：handler内部持有外部的弱引用，并把handler改成静态内部类，在activity的onDestroy()中调用handler的removeCallback()方法。
+- Handler引起的内存泄漏   
+	1.原因：静态内部类持有外部类的匿名引用，导致外部activity无法得到释放。  
+	2.解决方法：handler内部持有外部的弱引用，并把handler改成静态内部类，在activity的onDestroy()中调用handler的removeCallback()方法。
 
 ----------
