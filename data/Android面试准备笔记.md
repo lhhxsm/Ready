@@ -63,14 +63,44 @@
 - Handler的使用  
 	1.post(runnable)  
 	2.sendMessage(message)
-- Handler内部实现机制
-	1. Message：是在线程之间传递的消息。用于在不同线程之间的交换数据。
-	2. Handler：处理子线程和UI线程的消息对象Message。在子线程调用sendMessage发送消息对象，在handleMessage方法处理Message。
-	3. MessageQueue：消息队列，用于存放所有通过Handler发送过来的消息。消息会一直存放于消息队列当中，等待被处理。每个线程中只会有一个MessageQueue对象。MessageQueue底层数据结构是队列，而且这个队列只存放Message。
-	4. Looper:调用Looper的loop()方法后，进入到一个无限循环当中，然后每当MesssageQueue中存在一条消息，Looper就会将这条消息取出，并将它传递到Handler的handleMessage()方法中。每个线程只有一个Looper对象。
+- Handler内部实现机制  
+	1.Message：是在线程之间传递的消息。用于在不同线程之间的交换数据。  
+	2.Handler：处理子线程和UI线程的消息对象Message。在子线程调用sendMessage发送消息对象，在handleMessage方法处理Message。  
+	3.MessageQueue：消息队列，用于存放所有通过Handler发送过来的消息。消息会一直存放于消息队列当中，等待被处理。每个线程中只会有一个MessageQueue对象。MessageQueue底层数据结构是队列，而且这个队列只存放Message。  
+	4.Looper:调用Looper的loop()方法后，进入到一个无限循环当中，然后每当MesssageQueue中存在一条消息，Looper就会将这条消息取出，并将它传递到Handler的handleMessage()方法中。每个线程只有一个Looper对象。
+![](https://raw.githubusercontent.com/lhhxsm/Ready/master/picture/Handler%E6%9C%BA%E5%88%B6.png)
 	
-- Handler引起的内存泄漏 
-	1. 原因：静态内部类持有外部类的匿名引用，导致外部activity无法得到释放。
-	2. 解决方法：handler内部持有外部的弱引用，并把handler改成静态内部类，在activity的onDestroy()中调用handler的removeCallback()方法。
+- Handler引起的内存泄漏   
+	1.原因：静态内部类持有外部类的匿名引用，导致外部activity无法得到释放。  
+	2.解决方法：handler内部持有外部的弱引用，并把handler改成静态内部类，在activity的onDestroy()中调用handler的removeCallback()方法。
 
 ----------
+## AsyncTask机制   ##
+1.本质是一个封装了线程池和Handler的异步框架。  
+2.注意事项：  
+	a.内存泄漏：静态内部类持有外部类的匿名引用，导致外部对象无法得到释放，解决方法是让内部持有外部的弱引用。  
+	b.生命周期：在onDestroy中进行回收，调用cancel方法。
+	c.结果丢失：当内存不足时，当前的Activity被回收，由于AsyncTask持有的是回收之前Activity的引用，导致AsyncTask更新的结果对象为一个无效的Activity的引用，这就是结果丢失。
+	d.串行或并行
+
+----------
+## HandlerThread机制 ##
+- 产生背景：开启子线程进行耗时操作，多次创建和销毁子线程是很耗费资源的。
+- HandlerThread是什么？本质：Handler+Thread+Looper  
+	1.HandlerThread本质是一个线程类，继承Thread。  
+	2.HandlerThread有自己内部的Looper对象，可以进行Looper循环。  
+	3.通过获取HandlerThread的Looper对象传递给Handler对象，可以在handlerMessage方法中执行异步任务。  
+	4.优点是不会有堵塞，减少对性能的消耗，缺点是不能进行多任务的处理，需要等待进行处理，处理效率较低。  
+	5.与线程池注重并发不同，HandlerThread是一个串行队列，HandlerThread背后只有一个线程。
+
+----------
+## IntentService ##
+- 优先级高于Service，是继承处理异步请求的一个类，内部有一个工作线程来处理耗时操作。当任务执行完成之后，IntentService会自动停止，不需要手动控制。可以启动多次，每次只执行一个工作线程。  
+	a.它本质是一种特殊的Service,继承自Service并且本身就是一个抽象类。  
+	b.它内部是由HandlerThread和Handler实现异步操作。
+- 使用方法：实现onHandlerIntent和构造方法，onHandlerIntent为异步方法，可以执行耗时操作。
+
+----------
+## View绘制机制 ##
+- View树的绘制流程：measure（测量）->layout（布局）->draw（绘制）
+- Measure过程
