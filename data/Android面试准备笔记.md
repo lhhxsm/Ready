@@ -103,4 +103,34 @@
 ----------
 ## View绘制机制 ##
 - View树的绘制流程：measure（测量）->layout（布局）->draw（绘制）
+
 - Measure过程
+![](https://raw.githubusercontent.com/lhhxsm/Ready/master/picture/Measure%E8%BF%87%E7%A8%8B.png)  
+	1.ViewGroup.LayoutParams  
+	2.MeasureSpec（测量规格）：  
+	- MeasureSpec.EXACTLY //确定模式，父View希望子View的大小是确定的，由specSize决定；  
+	- MeasureSpec.AT_MOST //最多模式，父View希望子View的大小最多是specSize指定的值；  
+	- MeasureSpec.UNSPECIFIED //未指定模式，父View完全依据子View的设计值来决定； 
+	- View的measure方法是final的，不允许重载，View子类只能重载onMeasure来完成自己的测量逻辑。  
+	- View的布局大小由父View和子View共同决定，使用View的getMeasuredWidth()和getMeasuredHeight()方法来获取View测量的宽高，必须保证这两个方法在onMeasure流程之后被调用才能返回有效值。  
+	  
+- Layout过程  
+	1.View.layout方法可被重载,ViewGroup.layout为final的不可重载，ViewGroup.onLayout为abstract的，子类必须重载实现自己的位置逻辑。  
+	2.measure操作完成之后得到每个经过测量View的measuredWidth和measuredHeight。layout操作完成之后对每个View位置分配left、top、right、bottom，这些值是相对于父View来说的。  
+	3.使用View的getWidth()和getHeight()方法来获取View测量的宽高，必须保证这两个方法在onLayout流程之后被调用才能返回有效值。
+- Draw过程
+	1. 如果该View是一个ViewGroup，则需要递归绘制其所包含的所有子View。
+	2. View默认不会绘制任何内容，真正的绘制都需要自己在子类中实现。
+	3. View的绘制是借助onDraw方法传入的Canvas类来进行的。
+	4. 区分View动画和ViewGroup布局动画，前者指的是View自身的动画，可以通过setAnimation添加，后者是专门针对ViewGroup显示内部子视图时设置的动画，可以在xml布局文件中对ViewGroup设置layoutAnimation属性（譬如对LinearLayout设置子View在显示时出现逐行、随机、下等显示等不同动画效果）
+	5. 在获取画布剪切区（每个View的draw中传入的Canvas）时会自动处理掉padding，子View获取Canvas不用关注这些逻辑，只用关心如何绘制即可。
+	6. 默认情况下子View的ViewGroup.drawChild绘制顺序和子View被添加的顺序一致，但是你也可以重载ViewGroup.getChildDrawingOrder()方法提供不同顺序。
+
+----------
+## 事件分发事件 ##
+1. 产生背景：View是树形结构，View可能会重叠在一起，点击一个地方会有多个View响应。
+2. 分发方法  
+	- dispatchTouchEvent 进行事件的分发。如果事件能够传递给当前View,那么此方法一定会被调用。
+	- onInterceptTouchEvent 用来判断是否拦截某个事件。如果当前View拦截了某个事件，那么同一个事件序列当中，此方法不会被再次调用，返回结果表示是否拦截当前事件。
+	- onTouchEvent 用来处理点击事件，返回结果表示是否消耗当前事件，如果不消耗，则在同一个事件序列中，当前View无法再次接收到事件。
+3. 事件传递顺序：Activity–>Window–>View
