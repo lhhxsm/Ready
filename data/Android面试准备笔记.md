@@ -76,8 +76,9 @@
 
 ----------
 ## AsyncTask机制   ##
-1.本质是一个封装了线程池和Handler的异步框架。  
-2.注意事项：  
+1. 本质是一个封装了线程池和Handler的异步框架。  
+2. 机制原理：本质是一个静态线程池，AsyncTask派生的子类实现不同的异步任务，这些异步任务都是提交到静态线程池中执行的。工作线程doInBackgroud()方法执行异步任务。AsyncTask内部的InternalHandler响应这些消息，并调用相关的函数回调。
+3. 注意事项：  
 	a.内存泄漏：静态内部类持有外部类的匿名引用，导致外部对象无法得到释放，解决方法是让内部持有外部的弱引用。  
 	b.生命周期：在onDestroy中进行回收，调用cancel方法。
 	c.结果丢失：当内存不足时，当前的Activity被回收，由于AsyncTask持有的是回收之前Activity的引用，导致AsyncTask更新的结果对象为一个无效的Activity的引用，这就是结果丢失。
@@ -127,10 +128,33 @@
 	6. 默认情况下子View的ViewGroup.drawChild绘制顺序和子View被添加的顺序一致，但是你也可以重载ViewGroup.getChildDrawingOrder()方法提供不同顺序。
 
 ----------
-## 事件分发事件 ##
+## 事件分发机制 ##
 1. 产生背景：View是树形结构，View可能会重叠在一起，点击一个地方会有多个View响应。
 2. 分发方法  
 	- dispatchTouchEvent 进行事件的分发。如果事件能够传递给当前View,那么此方法一定会被调用。
 	- onInterceptTouchEvent 用来判断是否拦截某个事件。如果当前View拦截了某个事件，那么同一个事件序列当中，此方法不会被再次调用，返回结果表示是否拦截当前事件。
 	- onTouchEvent 用来处理点击事件，返回结果表示是否消耗当前事件，如果不消耗，则在同一个事件序列中，当前View无法再次接收到事件。
 3. 事件传递顺序：Activity–>Window–>View
+4. 事件的分发流程  
+	Activity->PhoneWindow->DecorView-ViewGroup(View树最底部的View)
+
+----------
+## ListView ##
+1. recycleBin机制
+2. ListView的优化  	  
+	a. convertView重用机制  
+	b. ViewHolder机制  
+	c. 三级缓冲/滑动监听事件
+
+----------
+## 动画机制 ##
+1. 补间动画：平移（Translate）、旋转（Rotate）、缩放（Scale）、透明度（Alpha）、组合（set）。平移之后焦点还在原来的位置，控件属性不变，优点是相对于
+2. 帧动画，制作简单，效果单一，逐帧播放需要很多图片，占用控件较大
+3. 属性动画（Android3.0/API 11 才出现的，之前的版本需要使用开源的项目nineoldandroids.jar），优点是易定制，效果强。
+
+----------
+## 自定义View ##
+1. 自定义View的几种方式  
+	a.对原有的View进行扩展   
+	b.多个View的组合  
+	c.重写View  
