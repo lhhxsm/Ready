@@ -1,3 +1,64 @@
+## Android的四种启动模式（launchMode） ##
+1. standard： 默认启动模式，每次激活 Activity 的时候都会创建一个新的 Activity 实例，并放入任务栈中。添加A->添加B->添加B->退出B->退出B->退出A
+2. singleTop：如果在任务的栈顶正好存有该 Activity 的实例，则会通过调用 onNewIntent() 方法进行重用，否则就会同 standard 模式一样，创建新的实例并放入栈顶。（ 当且仅当启动的 Activity 和上一个 Activity 一致的时候才会通过调用 onNewIntent() 方法重用 Activity ）   添加A->添加B->添加A 此时堆栈内是ABA(退出A->退出B->退出A)、添加A->添加B->添加B 此时堆栈内是AB（退出B->退出A）  如资讯阅读类APP的内容界面
+3. singleTask： 只要栈中已经存在了该 Activity 的实例，就会直接调用 onNewIntent() 方法来实现重用实例。重用时，直接让该 Activity 的实例回到栈顶，并且移除之前它上面的所有 Activity 实例。添加A->B->C->D->B 此时栈内是AB（退出B->退出A）如浏览器主页或者大部分APP的主页
+4. singleInstance： 在一个新栈中创建该 Activity 的实例，并让多个应用共享该栈中的该 Activity 实例。一旦该模式的 Activity 实例已经存在于某个栈中，任何应用再激活该 Activity 时都会重用该栈中的实例，是的，依然是调用 onNewIntent() 方法。 singleInstance 不要用于中间页面。Android系统的来电页面
+5. 通过设置 Intent.setFlags(int flags) 来设置启动的 Activity 的启动模式。通过代码设置的Activity的启动模式，优先级高于清单文件设置的。
+6. 可能遇到的问题：startActivityForResult启动一个Activity，还没有开始跳转就直接执行了onActivityResult（）、生命周期onResume（）被无故调用？原因：只要是不和原来的Activity在同一个Task就会产生onActivityResult（）被立即执行的情况，onActivityResult（）被执行，Activity会重新获取焦点，导致onResume（）被无故调用。
+
+----------
+
+## Activity的生命周期 ##
+* Activity的4种状态：running/paused/stopped/killed
+* 启动 Activiy：onCreate => onStart() => onResume(), Activity 进入运行状态.
+* Activity 退居后台 ( Home 或启动新 Activity ): onPause() => onStop().
+* Activity 返回前台: onRestart() => onStart() => onResume().
+* 退出当前Activity:onPause() => onStop() => onDestroy().
+* Activity 后台期间内存不足情况下当再次启动会重新执行启动流程。
+* 锁屏: onPause() => onStop().
+* 解锁: onStart() => onResume().
+![](https://raw.githubusercontent.com/lhhxsm/Ready/master/picture/%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.png)
+	1. onCreate() ：创建
+	2. onStart()：Activity由不可见变为可见 
+	3. onResume()：Activity准备好和用户进行交互时调用，此时的活动一定位于返回栈的栈顶，并且处于运行状态。
+	4. onPause()：执行速度一定要快快，不然会影响到新的栈顶Activity的使用。
+	5. onStop()：Activity完全不可见时调用。启动一个新的Activity是对话框时，onPause()方法会被调用,而onStop()方法不会被执行。
+	6. onDestroy()：销毁
+	7. onRestart()：由停止状态变成运行状态之前调用，重新启动。
+* 可见生存期：onStart()和onStop()之间。初始化加载--释放资源
+* 前台生存期：onResume()和onPause()之间。和用户进行交互
+* 完整生存期：onCreate()和onDestroy()之间。
+
+问题1.
+假设项目中有这样的需求，当指定的 Activity 在用户可见后才进行广播的注册，在用户不可见后对广播进行注销，那应该在哪两个回调中做这个处理呢？  
+答案1：onStart()和onStop().  
+问题2：
+如果有一些数据在 Activity 跳转时（或者离开时）要保存到数据库，那么你认为是在 onPause() 好还是在 onStop() 执行这个操作好呢？  
+答案2：onPause(). 难以保证每次运行都能正常运行到 onStop()方法，比如还没运行到 onStop() 系统就被回收了。  
+
+* Android进程优先级  前台、可见、服务、后台、空
+* Android任务栈  
+
+----------
+
+scheme跳转协议
+--
+
+Android种是scheme是一种页面内跳转协议， 服务器定制化页面跳转、通知栏消息定制化跳转、H5页面跳转等。
+
+Fragment
+--
+- FragmentPagerAdapter与FragmentStatePagerAdapter区别： 后者每次切换有回收内存，适用于页面较多的情况，更好内存。前者在页面切换是只是Fragment与Activity分离，适用于页面较少的情况
+- Fragment的生命周期
+![](https://raw.githubusercontent.com/lhhxsm/Ready/master/picture/Fragment%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.png)
+- Fragment通信  
+	1. 在Fragment中调用Activity中的方法 getActivity
+	2. 在Activity中调用Fragment中的方法 接口回调
+	3. 在Fragment中调用Fragment中的方法 findFragmentById
+- FragmentManager replace(替换) add(增加) remove(移除)
+
+----------
+
 ## BroadcastReceiver 广播 ##
 - 广播的定义
 - 广播的使用场景：  
@@ -96,9 +157,9 @@
 
 ----------
 ## IntentService ##
-- 优先级高于Service，是继承处理异步请求的一个类，内部有一个工作线程来处理耗时操作。当任务执行完成之后，IntentService会自动停止，不需要手动控制。可以启动多次，每次只执行一个工作线程。  
-	a.它本质是一种特殊的Service,继承自Service并且本身就是一个抽象类。  
-	b.它内部是由HandlerThread和Handler实现异步操作。
+- 优先级高于Service，是继承并处理异步请求的一个类，内部有一个工作线程来处理耗时操作。当任务执行完成之后，IntentService会自动停止，不需要手动控制。可以启动多次，每次只执行一个工作线程。  
+	1. 它本质是一种特殊的Service,继承自Service并且本身就是一个抽象类。  
+	2. 它内部是由HandlerThread和Handler实现异步操作。
 - 使用方法：实现onHandlerIntent和构造方法，onHandlerIntent为异步方法，可以执行耗时操作。
 
 ----------
@@ -107,13 +168,13 @@
 
 - Measure过程
 ![](https://raw.githubusercontent.com/lhhxsm/Ready/master/picture/Measure%E8%BF%87%E7%A8%8B.png)  
-	1.ViewGroup.LayoutParams  
+	1.ViewGroup.LayoutParams指定视图的宽和高  
 	2.MeasureSpec（测量规格）：  
-	- MeasureSpec.EXACTLY //确定模式，父View希望子View的大小是确定的，由specSize决定；  
-	- MeasureSpec.AT_MOST //最多模式，父View希望子View的大小最多是specSize指定的值；  
-	- MeasureSpec.UNSPECIFIED //未指定模式，父View完全依据子View的设计值来决定； 
-	- View的measure方法是final的，不允许重载，View子类只能重载onMeasure来完成自己的测量逻辑。  
-	- View的布局大小由父View和子View共同决定，使用View的getMeasuredWidth()和getMeasuredHeight()方法来获取View测量的宽高，必须保证这两个方法在onMeasure流程之后被调用才能返回有效值。  
+		a. MeasureSpec.EXACTLY //确定模式，父View希望子View的大小是确定的，由specSize决定；  
+		b. MeasureSpec.AT_MOST //最多模式，父View希望子View的大小最多是specSize指定的值；  
+		c. MeasureSpec.UNSPECIFIED //未指定模式，父View完全依据子View的设计值来决定；   
+		d. View的measure方法是final的，不允许重载，View子类只能重载onMeasure来完成自己的测量逻辑。  
+		e. View的布局大小由父View和子View共同决定，使用View的getMeasuredWidth()和getMeasuredHeight()方法来获取View测量的宽高，必须保证这两个方法在onMeasure流程之后被调用才能返回有效值。  
 	  
 - Layout过程  
 	1.View.layout方法可被重载,ViewGroup.layout为final的不可重载，ViewGroup.onLayout为abstract的，子类必须重载实现自己的位置逻辑。  
@@ -126,6 +187,7 @@
 	4. 区分View动画和ViewGroup布局动画，前者指的是View自身的动画，可以通过setAnimation添加，后者是专门针对ViewGroup显示内部子视图时设置的动画，可以在xml布局文件中对ViewGroup设置layoutAnimation属性（譬如对LinearLayout设置子View在显示时出现逐行、随机、下等显示等不同动画效果）
 	5. 在获取画布剪切区（每个View的draw中传入的Canvas）时会自动处理掉padding，子View获取Canvas不用关注这些逻辑，只用关心如何绘制即可。
 	6. 默认情况下子View的ViewGroup.drawChild绘制顺序和子View被添加的顺序一致，但是你也可以重载ViewGroup.getChildDrawingOrder()方法提供不同顺序。
+	7. invalidate()和requestLayout()区别
 
 ----------
 ## 事件分发机制 ##
